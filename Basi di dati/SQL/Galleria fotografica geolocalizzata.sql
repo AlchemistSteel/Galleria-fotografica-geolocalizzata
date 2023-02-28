@@ -1,0 +1,104 @@
+--SEQUENCE CHE GENERA GLI ID PER UTENTE
+CREATE SEQUENCE genera_id_utente
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+NOCACHE;
+
+--SEQUENCE CHE GENERA GLI ID PER BACHECAPERSONALE
+CREATE SEQUENCE genera_id_bacheca_personale
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+NOCACHE;
+
+--SEQUENCE CHE GENERA GLI ID PER BACHECACONDIVISA
+CREATE SEQUENCE genera_id_bacheca_condivisa
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+NOCACHE;
+
+--SEQUENCE CHE GENERA GLI ID PER FOTO
+CREATE SEQUENCE genera_id_foto
+START WITH 1
+INCREMENT BY 1
+MINVALUE 1
+NOCACHE;
+
+--CREAZIONE TABELLA UTENTE
+CREATE TABLE UTENTE(
+    IDUtente integer DEFAULT ON NULL genera_id_utente.nextval PRIMARY KEY,
+    Nome String NOT NULL,
+    Cognome String NOT NULL,
+    NumPartecipazioni integer NOT NULL
+);
+
+--CREAZIONE TABELLA BACHECAPERSONALE
+CREATE TABLE BACHECAPERSONALE(
+    CodBP integer DEFAULT ON NULL genera_id_bacheca_personale.nextval PRIMARY KEY,
+    IDFoto integer NOT NULL UNIQUE,
+    Dimensione integer NOT NULL,
+    Proprietario integer NOT NULL,
+    CONSTRAINT fk_bp_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT fk_bp_utente FOREIGN KEY (IDUtente) REFERENCES UTENTE(IDUtente)
+);
+
+--CREAZIONE TABELLA BACHECACONDIVISA
+CREATE TABLE BACHECACONDIVISA(
+    CodBC integer DEFAULT ON NULL genera_id_bacheca_condivisa.nextval PRIMARY KEY,
+    IDFoto integer NOT NULL UNIQUE,
+    Dimensione integer NOT NULL,
+    CONSTRAINT fk_bc_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto)
+);
+
+--CREAZIONE TABELLA PARTECIPAZIONE
+CREATE TABLE PARTECIPAZIONE(
+    IDUtente integer NOT NULL,
+    CodBC integer NOT NULL,
+    CONSTRAINT uc_partecipazione UNIQUE (IDUtente, CodBC)
+);
+
+--CREAZIONE TABELLA FOTO
+CREATE TABLE FOTO(
+    IDFoto integer DEFAULT ON NULL genera_id_foto.nextval PRIMARY KEY,
+    Proprietario integer NOT NULL,
+    Dispositivo String NOT NULL,
+    isPrivate char(1) NOT NULL,
+    CodBP integer NOT NULL,
+    CodBC integer NOT NULL,
+    Dimensione integer NOT NULL,
+    DataOra DATE DEFAULT SYSDATE,
+    CONSTRAINT fk_foto_utente FOREIGN KEY (Proprietario) REFERENCES UTENTE.IDUtente,
+    CONSTRAINT fk_foto_bp FOREIGN KEY (CodBP) REFERENCES BACHECAPERSONALE(CodBP),
+    CONSTRAINT fk_foto_bc FOREIGN KEY (CodBC) REFERENCES BACHECACONDIVISA(CodBC)
+);
+
+--CREAZIONE TABELLA CATEGORIA
+CREATE TABLE CATEGORIA(
+    Nome String NOT NULL, PRIMARY KEY,
+    TagCategoria String NOT NULL UNIQUE,
+    CONSTRAINT uc_categoria UNIQUE (Nome, TagCategoria)
+);
+
+--CREAZIONE TABELLA SOGGETTO
+CREATE TABLE SOGGETTO(
+    IDFoto integer NOT NULL,
+    Nome String NOT NULL,
+    TagFoto String NOT NULL,
+    CONSTRAINT fk_soggetto_foto  FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT fk_soggetto_categoria FOREIGN KEY (Nome) REFERENCES CATEGORIA(Nome),
+    CONSTRAINT uc_soggetto UNIQUE (IDFoto, TagFoto)
+);
+
+--CREAZIONE TABELLA LUOGO
+CREATE TABLE LUOGO(
+    IDFoto integer NOT NULL,
+    Città String DEFAULT 'N/A' NOT NULL,
+    Latitudine integer NOT NULL,
+    Longitudine integer NOT NULL,
+    CONSTRAINT fk_luogo_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT uc_luogo UNIQUE (Latitudine, Longitudine, IDFoto)
+);
+
+ALTER SESSION SET NLS_DATE_FORMAT = 'DD/MM/YYYY hh24:mi';
