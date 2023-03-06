@@ -1,3 +1,19 @@
+DROP TABLE LUOGO;
+DROP TABLE PERSONAINFOTO;
+DROP TABLE SOGGETTIFOTO;
+DROP TABLE SOGGETTIRICONOSCIUTI;
+DROP TABLE PUBBLICAZIONE;
+DROP TABLE PARTECIPAZIONE;
+DROP TABLE BACHECACONDIVISA;
+DROP TABLE BACHECAPERSONALE;
+DROP TABLE FOTO;
+DROP TABLE UTENTE;
+DROP SEQUENCE genera_id_utente;
+DROP SEQUENCE genera_id_bacheca_personale;
+DROP SEQUENCE genera_id_bacheca_condivisa;
+DROP SEQUENCE genera_id_foto;
+PURGE RECYCLEBIN;
+--CREAZIONE SEQUENCE PER AUTOINCREMENTI ID
 --SEQUENCE CHE GENERA GLI ID PER UTENTE
 CREATE SEQUENCE genera_id_utente
 START WITH 1
@@ -26,79 +42,187 @@ INCREMENT BY 1
 MINVALUE 1
 NOCACHE;
 
+
+
+
+
+
+
+
+
+
+--CREAZIONE TABELLE
 --CREAZIONE TABELLA UTENTE
 CREATE TABLE UTENTE(
-    IDUtente integer DEFAULT ON NULL genera_id_utente.nextval PRIMARY KEY,
-    Nome String NOT NULL,
-    Cognome String NOT NULL,
-    NumPartecipazioni integer NOT NULL
-);
-
---CREAZIONE TABELLA BACHECAPERSONALE
-CREATE TABLE BACHECAPERSONALE(
-    CodBP integer DEFAULT ON NULL genera_id_bacheca_personale.nextval PRIMARY KEY,
-    IDFoto integer NOT NULL UNIQUE,
-    Dimensione integer NOT NULL,
-    Proprietario integer NOT NULL,
-    CONSTRAINT fk_bp_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
-    CONSTRAINT fk_bp_utente FOREIGN KEY (IDUtente) REFERENCES UTENTE(IDUtente)
-);
-
---CREAZIONE TABELLA BACHECACONDIVISA
-CREATE TABLE BACHECACONDIVISA(
-    CodBC integer DEFAULT ON NULL genera_id_bacheca_condivisa.nextval PRIMARY KEY,
-    IDFoto integer NOT NULL UNIQUE,
-    Dimensione integer NOT NULL,
-    CONSTRAINT fk_bc_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto)
-);
-
---CREAZIONE TABELLA PARTECIPAZIONE
-CREATE TABLE PARTECIPAZIONE(
-    IDUtente integer NOT NULL,
-    CodBC integer NOT NULL,
-    CONSTRAINT uc_partecipazione UNIQUE (IDUtente, CodBC)
+    IDUtente INTEGER DEFAULT ON NULL genera_id_utente.nextval PRIMARY KEY,
+    Nome VARCHAR2(20) NOT NULL,
+    Cognome VARCHAR2(20) NOT NULL,
+    Email VARCHAR (100) NOT NULL UNIQUE,
+    USR_Password VARCHAR(50) NOT NULL,
+    CONSTRAINT check_validità_email CHECK (Email LIKE '_%@_%.__%')
 );
 
 --CREAZIONE TABELLA FOTO
 CREATE TABLE FOTO(
-    IDFoto integer DEFAULT ON NULL genera_id_foto.nextval PRIMARY KEY,
-    Proprietario integer NOT NULL,
-    Dispositivo String NOT NULL,
-    isPrivate char(1) NOT NULL,
-    CodBP integer NOT NULL,
-    CodBC integer NOT NULL,
-    Dimensione integer NOT NULL,
+    IDFoto INTEGER DEFAULT ON NULL genera_id_foto.nextval PRIMARY KEY,
+    Proprietario INTEGER NOT NULL,
+    Dispositivo VARCHAR2(30) NOT NULL,
+    isPrivate CHAR(1) NOT NULL,
+    Dimensione INTEGER NOT NULL,
     DataOra DATE DEFAULT SYSDATE,
-    CONSTRAINT fk_foto_utente FOREIGN KEY (Proprietario) REFERENCES UTENTE.IDUtente,
-    CONSTRAINT fk_foto_bp FOREIGN KEY (CodBP) REFERENCES BACHECAPERSONALE(CodBP),
-    CONSTRAINT fk_foto_bc FOREIGN KEY (CodBC) REFERENCES BACHECACONDIVISA(CodBC)
+    CONSTRAINT fk_foto_utente FOREIGN KEY (Proprietario) REFERENCES UTENTE(IDUtente)
 );
 
---CREAZIONE TABELLA CATEGORIA
-CREATE TABLE CATEGORIA(
-    Nome String NOT NULL, PRIMARY KEY,
-    TagCategoria String NOT NULL UNIQUE,
-    CONSTRAINT uc_categoria UNIQUE (Nome, TagCategoria)
+--CREAZIONE TABELLA BACHECAPERSONALE
+CREATE TABLE BACHECAPERSONALE(
+    CodBP INTEGER DEFAULT ON NULL genera_id_bacheca_personale.nextval PRIMARY KEY,
+    IDFoto INTEGER NOT NULL UNIQUE,
+    Dimensione INTEGER NOT NULL,
+    Proprietario INTEGER NOT NULL,
+    CONSTRAINT fk_bp_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT fk_bp_utente FOREIGN KEY (Proprietario) REFERENCES UTENTE(IDUtente),
+    CONSTRAINT uc_bachecapersonale UNIQUE (CodBP, Proprietario)
 );
 
---CREAZIONE TABELLA SOGGETTO
-CREATE TABLE SOGGETTO(
-    IDFoto integer NOT NULL,
-    Nome String NOT NULL,
-    TagFoto String NOT NULL,
-    CONSTRAINT fk_soggetto_foto  FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
-    CONSTRAINT fk_soggetto_categoria FOREIGN KEY (Nome) REFERENCES CATEGORIA(Nome),
-    CONSTRAINT uc_soggetto UNIQUE (IDFoto, TagFoto)
+--CREAZIONE TABELLA BACHECACONDIVISA
+CREATE TABLE BACHECACONDIVISA(
+    CodBC INTEGER DEFAULT ON NULL genera_id_bacheca_condivisa.nextval PRIMARY KEY,
+    NomeBC VARCHAR2(40) NOT NULL UNIQUE,
+    Dimensione INTEGER NOT NULL,
+    CONSTRAINT uc_bachecacondivisa UNIQUE (CodBC, NomeBC)
+);
+
+--CREAZIONE TABELLA PARTECIPAZIONE
+CREATE TABLE PARTECIPAZIONE(
+    IDUtente INTEGER NOT NULL,
+    CodBC INTEGER NOT NULL,
+    CONSTRAINT uc_partecipazione UNIQUE (IDUtente, CodBC)
+);
+
+--CREAZIONE TABELLA PUBBLICAZIONE
+CREATE TABLE PUBBLICAZIONE(
+    IDFoto INTEGER NOT NULL,
+    CodBC INTEGER NOT NULL,
+    CONSTRAINT uc_pubblicazione UNIQUE (IDFoto, CodBC)
+);
+
+--CREAZIONE TABELLA SOGGETTIRICONOSCIUTI
+CREATE TABLE SOGGETTIRICONOSCIUTI(
+    Soggetto VARCHAR2(20) NOT NULL PRIMARY KEY,
+    Categoria VARCHAR2(20) NOT NULL UNIQUE,
+    CONSTRAINT uc_soggetto UNIQUE (Soggetto, Categoria)
+);
+
+--CREAZIONE TABELLA SOGGETTIFOTO
+CREATE TABLE SOGGETTIFOTO(
+    IDFoto INTEGER NOT NULL,
+    Soggetto VARCHAR2(20) NOT NULL,
+    CONSTRAINT fk_soggettifoto_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT fk_soggettifoto_soggettiriconosciuti FOREIGN KEY (Soggetto) REFERENCES SOGGETTIRICONOSCIUTI(Soggetto),
+    CONSTRAINT uc_soggettifoto UNIQUE (IDFoto, Soggetto)
+);
+
+--CREAZIONE TABELLA PERSONAINFOTO
+CREATE TABLE PERSONAINFOTO(
+    IDUtente INTEGER NOT NULL,
+    IDFoto INTEGER NOT NULL,
+    CONSTRAINT fk_personainfoto_utente FOREIGN KEY (IDUtente) REFERENCES UTENTE(IDUtente),
+    CONSTRAINT fk_personainfoto_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
+    CONSTRAINT uc_personainfoto UNIQUE (IDUtente, IDFoto)
 );
 
 --CREAZIONE TABELLA LUOGO
 CREATE TABLE LUOGO(
-    IDFoto integer NOT NULL,
-    Città String DEFAULT 'N/A' NOT NULL,
-    Latitudine integer NOT NULL,
-    Longitudine integer NOT NULL,
-    CONSTRAINT fk_luogo_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto),
-    CONSTRAINT uc_luogo UNIQUE (Latitudine, Longitudine, IDFoto)
+    IDFoto INTEGER NOT NULL,
+    Città VARCHAR2(30) DEFAULT ON NULL 'N/A' UNIQUE,
+    Latitudine INTEGER,
+    Longitudine INTEGER,
+    CONSTRAINT fk_luogo_foto FOREIGN KEY (IDFoto) REFERENCES FOTO(IDFoto)
 );
+
+
+
+
+
+
+
+
+
+
+--CREAZIONE TRIGGER
+--Trigger che non permette di pubblicare una foto in una bacheca a cui non si è sottoscritti (partecipa)
+CREATE OR REPLACE TRIGGER partecipazione_obbligatoria_pubblicazione
+AFTER INSERT ON BACHECACONDIVISA
+FOR EACH ROW
+DECLARE
+CURSOR C1 IS SELECT IDUtente
+             FROM PARTECIPAZIONE
+             WHERE PARTECIPAZIONE.CodBC = NEW.CodBC;
+partecipazione_mancante EXCEPTION;
+
+BEGIN
+    OPEN C1;
+    LOOP
+    EXIT WHEN (C1%NOTFOUND OR C1 = NEW.IDUtente);
+    END LOOP;
+    
+    IF (C1 != IDUtente)
+    THEN
+        RAISE partecipazione_mancante;
+    END IF;
+        EXCEPTION
+            WHEN partecipazione_mancante THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Devi essere iscritto a questa bacheca per pubblicarci foto');
+
+END partecipazione_obbligatoria_pubblicazione;
+
+
+
+
+
+
+
+
+
+
+
+--CREAZIONE FUNZIONI E PROCEDURE
+--Funzione che recupera tutte le foto scattate nello stesso luogo
+CREATE OR REPLACE FUNCTION foto_luogo_in_comune (IN_Città LUOGO.Città%TYPE)
+RETURN VARCHAR2 AS
+CURSOR C1 IS SELECT Città
+             FROM LUOGO
+             WHERE LUOGO.Città = IN_Città;
+FLC_OUT VARCHAR2 (2000);
+BEGIN
+    OPEN C1;
+    LOOP
+    EXIT WHEN(C1%NOTFOUND);
+    
+    FLC_OUT := (FLC_OUT || C1.Città);
+    
+    END LOOP;
+    
+
+END;
+--Funzione che recupera tutte le foto che condividono lo stesso soggetto
+
+
+
+
+
+
+
+
+
+
+--CREAZIONE VISTE
+--Vista dei 3 luoghi più immortalati
+CREATE OR REPLACE VIEW TOP3LUOGHI AS
+    SELECT Città, COUNT(IDFoto) AS Numero_Scatti
+    FROM LUOGO
+    GROUP BY Città
+    ORDER BY IDFoto DESC
+    FETCH FIRST 3 ROWS ONLY;
 
 ALTER SESSION SET NLS_DATE_FORMAT = 'DD/MM/YYYY hh24:mi';
